@@ -1,0 +1,55 @@
+version: "3"
+services:
+  mysql:
+    image: mysql:5.7
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: lavagna
+    # healthcheck:
+    #   test: [ "CMD", "mysqladmin", "ping", "-h", "mysql", '-u', 'root', '-psecret' ]
+    #   timeout: 20s
+    #   retries: 10
+
+  app:
+    image: 644435390668.dkr.ecr.us-west-2.amazonaws.com/agadzi_lavagna:1.2
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      DB_DIALECT: MYSQL
+      DB_URL: jdbc:mysql://mysql:3306/lavagna?useUnicode=true&characterEncoding=utf-8
+      DB_USER: root
+      DB_PASS: secret
+      SPRING_PROFILE: dev
+    depends_on:
+      - mysql
+
+    volumes:
+      - static_files:/app
+
+  nginx_app:
+    image: nginx
+    volumes:
+      - ./src/main/webapp:/static
+      - ./config-app:/etc/nginx/conf.d
+      - ./logs:/var/log/nginx/
+    ports:
+      - 80:80
+    depends_on:
+      - app
+
+  nginx_docs:
+    image: nginx
+    volumes:
+      - static_files:/app
+      - ./config-help:/etc/nginx/conf.d
+    ports:
+      - 8081:80
+    depends_on:
+      - app
+
+
+volumes:
+  mysql_data:
+  static_files:
